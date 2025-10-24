@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+	<!-- USERS TABLE -->
+	<changeSet id="1" author="mayur">
+		<createTable tableName="users">
+			<column name="id" type="BIGSERIAL" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="username" type="VARCHAR(50)">
+				<constraints nullable="false" unique="true" />
+			</column>
+			<column name="email" type="VARCHAR(100)">
+				<constraints nullable="false" unique="true" />
+			</column>
+			<column name="password_hash" type="VARCHAR(255)">
+				<constraints nullable="false" />
+			</column>
+			<column name="role" type="VARCHAR(20)">
+				<constraints nullable="false" />
+			</column>
+			<column name="created_at" type="TIMESTAMP" />
+			<column name="updated_at" type="TIMESTAMP" />
+		</createTable>
+	</changeSet>
+
+	<!-- PROJECTS TABLE -->
+	<changeSet id="2" author="mayur">
+		<createTable tableName="projects">
+			<column name="id" type="BIGSERIAL">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="name" type="VARCHAR(100)">
+				<constraints nullable="false" />
+			</column>
+			<column name="description" type="TEXT" />
+			<column name="owner_id" type="BIGINT" />
+			<column name="created_at" type="TIMESTAMP" />
+			<column name="updated_at" type="TIMESTAMP" />
+		</createTable>
+
+		<addForeignKeyConstraint
+			baseTableName="projects" baseColumnNames="owner_id"
+			referencedTableName="users" referencedColumnNames="id"
+			onDelete="SET NULL" constraintName="fk_projects_owner_id" />
+
+	</changeSet>
+
+	<!-- ISSUES TABLE -->
+	<changeSet id="3" author="mayur">
+		<createTable tableName="issues">
+			<column name="id" type="BIGSERIAL">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="title" type="VARCHAR(255)">
+				<constraints nullable="false" />
+			</column>
+			<column name="description" type="TEXT" />
+			<column name="status" type="VARCHAR(50)" />
+			<column name="priority" type="VARCHAR(50)" />
+			<column name="project_id" type="BIGINT" />
+			<column name="reporter_id" type="BIGINT" />
+			<column name="assignee_id" type="BIGINT" />
+			<column name="created_at" type="TIMESTAMP" />
+			<column name="updated_at" type="TIMESTAMP" />
+		</createTable>
+
+		<addForeignKeyConstraint
+			baseTableName="issues" baseColumnNames="project_id"
+			referencedTableName="projects" referencedColumnNames="id"
+			onDelete="CASCADE" constraintName="fk_issues_project_id" />
+
+		<addForeignKeyConstraint
+			baseTableName="issues" baseColumnNames="reporter_id"
+			referencedTableName="users" referencedColumnNames="id"
+			onDelete="SET NULL" constraintName="fk_issues_reporter_id" />
+
+		<addForeignKeyConstraint
+			baseTableName="issues" baseColumnNames="assignee_id"
+			referencedTableName="users" referencedColumnNames="id"
+			onDelete="SET NULL" constraintName="fk_issues_assignee_id" />
+
+	</changeSet>
+
+	<!-- COMMENTS TABLE -->
+	<changeSet id="4" author="mayur">
+		<createTable tableName="comments">
+			<column name="id" type="BIGSERIAL">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="content" type="TEXT">
+				<constraints nullable="false" />
+			</column>
+			<column name="issue_id" type="BIGINT" />
+			<column name="author_id" type="BIGINT" />
+			<column name="created_at" type="TIMESTAMP" />
+		</createTable>
+
+		<addForeignKeyConstraint
+			baseTableName="comments" baseColumnNames="issue_id"
+			referencedTableName="issues" referencedColumnNames="id"
+			onDelete="CASCADE" constraintName="fk_comments_issue_id" />
+
+		<addForeignKeyConstraint
+			baseTableName="comments" baseColumnNames="author_id"
+			referencedTableName="users" referencedColumnNames="id"
+			onDelete="SET NULL" constraintName="fk_comments_author_id" />
+
+	</changeSet>
+
+	<!-- ATTACHMENTS TABLE -->
+	<changeSet id="5" author="mayur">
+		<createTable tableName="attachments">
+			<column name="id" type="BIGSERIAL">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="file_name" type="VARCHAR(255)" />
+			<column name="file_url" type="VARCHAR(255)" />
+			<column name="file_size" type="BIGINT" />
+			<column name="issue_id" type="BIGINT" />
+			<column name="uploaded_at" type="TIMESTAMP" />
+		</createTable>
+
+		<addForeignKeyConstraint
+			baseTableName="attachments" baseColumnNames="issue_id"
+			referencedTableName="issues" referencedColumnNames="id"
+			onDelete="CASCADE" constraintName="fk_attachments_issue_id" />
+
+	</changeSet>
+
+	<!-- AUDIT_LOGS TABLE -->
+	<changeSet id="6" author="mayur">
+		<createTable tableName="audit_logs">
+			<column name="id" type="BIGSERIAL">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="action" type="VARCHAR(100)" />
+			<column name="details" type="TEXT" />
+			<column name="user_id" type="BIGINT" />
+			<column name="timestamp" type="TIMESTAMP" />
+		</createTable>
+
+		<addForeignKeyConstraint
+			baseTableName="audit_logs" baseColumnNames="user_id"
+			referencedTableName="users" referencedColumnNames="id"
+			onDelete="SET NULL" constraintName="fk_audit_logs_user_id" />
+
+	</changeSet>
+
+</databaseChangeLog>

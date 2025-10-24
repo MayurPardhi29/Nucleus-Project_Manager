@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: nucleusbackend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/Nucleus-Database
+    username: postgres
+    password: 12345
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# ✅ SpringDoc configuration must be at root, NOT under spring:
+springdoc:
+  api-docs:
+    path: /api-json
+  swagger-ui:
+    path: /swagger-ui
+    url: /api-json
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true
+
+jwt:
+  secret: ${JWT_SECRET:ChangeMeInProdChangeMeInProdChangeMeInProd}
+  expiration: 36000000
+
+app:
+  upload:
+    dir: uploads
+    max-file-size: 10485760
+
+logging:
+  level:
+    com.mayur.nucleusbackend: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+server:
+  port: 8080

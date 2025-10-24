@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- Add missing columns to comments table -->
+    <changeSet id="003-1" author="dev">
+        <addColumn tableName="comments">
+            <column name="updated_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Add missing columns to issues table -->
+    <changeSet id="003-2" author="dev">
+        <addColumn tableName="issues">
+            <column name="parent_issue_id" type="BIGINT"/>
+            <column name="issue_key" type="VARCHAR(50)"/>
+            <column name="type" type="VARCHAR(20)" defaultValue="TASK"/>
+            <column name="story_points" type="INTEGER"/>
+            <column name="time_estimate" type="INTEGER"/>
+            <column name="time_spent" type="INTEGER" defaultValue="0"/>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Add foreign key for parent_issue_id -->
+    <changeSet id="003-3" author="dev">
+        <addForeignKeyConstraint
+                baseTableName="issues"
+                baseColumnNames="parent_issue_id"
+                referencedTableName="issues"
+                referencedColumnNames="id"
+                constraintName="fk_issues_parent_issue"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+    <!-- Add missing columns to users table -->
+    <changeSet id="003-4" author="dev">
+        <addColumn tableName="users">
+            <column name="display_name" type="VARCHAR(255)"/>
+            <column name="is_active" type="BOOLEAN" defaultValue="true"/>
+            <column name="last_login_at" type="TIMESTAMPTZ"/>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

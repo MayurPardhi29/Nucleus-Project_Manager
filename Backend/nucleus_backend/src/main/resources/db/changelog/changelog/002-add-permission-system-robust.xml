@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- ===== CHECK AND CREATE ORGANIZATIONS TABLE ===== -->
+    <changeSet id="002-1" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="organizations"/>
+            </not>
+        </preConditions>
+        <createTable tableName="organizations">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slug" type="VARCHAR(100)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_by" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValue="now()"/>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </createTable>
+        <comment>Create organizations table if it doesn't exist</comment>
+    </changeSet>
+
+    <!-- ===== CREATE DEFAULT ORGANIZATION ===== -->
+    <changeSet id="002-2" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM organizations WHERE slug = 'default'</sqlCheck>
+        </preConditions>
+        <sql>
+            INSERT INTO organizations (name, slug, description, created_by, created_at)
+            VALUES (
+            'Default Organization',
+            'default',
+            'Default organization for existing projects',
+            (SELECT id FROM users ORDER BY id LIMIT 1),
+            NOW()
+            );
+        </sql>
+        <comment>Create default organization if it doesn't exist</comment>
+    </changeSet>
+
+    <!-- ===== ADD PROJECT KEY COLUMN ===== -->
+    <changeSet id="002-3" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="projects" columnName="project_key"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="projects">
+            <column name="project_key" type="VARCHAR(10)"/>
+        </addColumn>
+        <comment>Add project_key column if it doesn't exist</comment>
+    </changeSet>
+
+    <!-- ===== ADD ORGANIZATION_ID COLUMN ===== -->
+    <changeSet id="002-4" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="projects" columnName="organization_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="projects">
+            <column name="organization_id" type="BIGINT"/>
+        </addColumn>
+        <comment>Add organization_id column if it doesn't exist</comment>
+    </changeSet>
+
+    <!-- ===== ADD OTHER PROJECT COLUMNS ===== -->
+    <changeSet id="002-5" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="projects" columnName="is_private"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="projects">
+            <column name="is_private" type="BOOLEAN" defaultValue="false"/>
+            <column name="archived_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+        <comment>Add is_private and archived_at columns if they don't exist</comment>
+    </changeSet>
+
+    <!-- ===== INITIALIZE PROJECT DATA ===== -->
+    <changeSet id="002-6" author="dev">
+        <sql>
+            -- Update project_key if not set
+            UPDATE projects
+            SET project_key = 'PROJ' || id
+            WHERE project_key IS NULL;
+
+            -- Update organization_id if not set
+            UPDATE projects
+            SET organization_id = (SELECT id FROM organizations WHERE slug = 'default')
+            WHERE organization_id IS NULL;
+
+            -- Update is_private if not set
+            UPDATE projects
+            SET is_private = false
+            WHERE is_private IS NULL;
+        </sql>
+        <comment>Initialize project data with default values</comment>
+    </changeSet>
+
+    <!-- ===== ADD PROJECT CONSTRAINTS ===== -->
+    <changeSet id="002-7" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="projects" columnName="project_key"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'projects'
+                    AND constraint_name = 'uk_project_key'
+                    AND constraint_type = 'UNIQUE'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="projects" columnName="project_key"/>
+        <addUniqueConstraint tableName="projects" columnNames="project_key" constraintName="uk_project_key"/>
+        <comment>Add constraints to project_key</comment>
+    </changeSet>
+
+    <changeSet id="002-8" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="projects" columnName="organization_id"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_name = 'projects'
+                    AND column_name = 'organization_id'
+                    AND is_nullable = 'YES'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="projects" columnName="organization_id"/>
+        <comment>Add not null constraint to organization_id</comment>
+    </changeSet>
+
+    <!-- ===== CREATE PROJECT MEMBERS TABLE ===== -->
+    <changeSet id="002-9" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="project_members"/>
+            </not>
+        </preConditions>
+        <createTable tableName="project_members">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="project_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)" defaultValue="VIEWER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assigned_at" type="TIMESTAMPTZ" defaultValue="now()"/>
+        </createTable>
+        <comment>Create project members table if it doesn't exist</comment>
+    </changeSet>
+
+    <changeSet id="002-10" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="project_members"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'project_members'
+                    AND constraint_name = 'uk_project_members_unique'
+                    AND constraint_type = 'UNIQUE'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint
+                tableName="project_members"
+                columnNames="project_id, user_id"
+                constraintName="uk_project_members_unique"/>
+        <comment>Add unique constraint to project members</comment>
+    </changeSet>
+
+    <!-- ===== CREATE PROJECT SEQUENCES TABLE ===== -->
+    <changeSet id="002-11" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="project_sequences"/>
+            </not>
+        </preConditions>
+        <createTable tableName="project_sequences">
+            <column name="project_id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="next_issue_number" type="INT" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <comment>Create project sequences table if it doesn't exist</comment>
+    </changeSet>
+
+    <changeSet id="002-12" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="project_sequences"/>
+        </preConditions>
+        <sql>
+            INSERT INTO project_sequences (project_id, next_issue_number)
+            SELECT id, 1 FROM projects
+            WHERE id NOT IN (SELECT project_id FROM project_sequences);
+        </sql>
+        <comment>Initialize sequences for existing projects</comment>
+    </changeSet>
+
+    <!-- ===== ADD ISSUE COLUMNS ===== -->
+    <changeSet id="002-13" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="issues" columnName="issue_key"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="issues">
+            <column name="issue_key" type="VARCHAR(50)"/>
+            <column name="type" type="VARCHAR(20)" defaultValue="TASK"/>
+            <column name="story_points" type="INTEGER"/>
+            <column name="time_estimate" type="INTEGER"/>
+            <column name="time_spent" type="INTEGER" defaultValue="0"/>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+        <comment>Add enhanced fields to issues table</comment>
+    </changeSet>
+
+    <changeSet id="002-14" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="issues" columnName="issue_key"/>
+        </preConditions>
+        <sql>
+            UPDATE issues
+            SET issue_key = (
+            SELECT p.project_key || '-' || issues.id
+            FROM projects p
+            WHERE p.id = issues.project_id
+            )
+            WHERE issue_key IS NULL;
+        </sql>
+        <comment>Generate issue keys for existing issues</comment>
+    </changeSet>
+
+    <changeSet id="002-15" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="issues" columnName="issue_key"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'issues'
+                    AND constraint_name = 'uk_issue_key'
+                    AND constraint_type = 'UNIQUE'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="issues" columnName="issue_key"/>
+        <addUniqueConstraint tableName="issues" columnNames="issue_key" constraintName="uk_issue_key"/>
+        <comment>Add constraints to issue_key</comment>
+    </changeSet>
+
+    <!-- ===== ADD FOREIGN KEY CONSTRAINTS ===== -->
+    <changeSet id="002-16" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="organizations"/>
+                <columnExists tableName="organizations" columnName="created_by"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'organizations'
+                    AND constraint_name = 'fk_organizations_created_by'
+                    AND constraint_type = 'FOREIGN KEY'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="organizations"
+                baseColumnNames="created_by"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                constraintName="fk_organizations_created_by"
+                onDelete="RESTRICT"/>
+        <comment>Add foreign key constraint for organizations.created_by</comment>
+    </changeSet>
+
+    <changeSet id="002-17" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="projects"/>
+                <columnExists tableName="projects" columnName="organization_id"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'projects'
+                    AND constraint_name = 'fk_projects_organization'
+                    AND constraint_type = 'FOREIGN KEY'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="projects"
+                baseColumnNames="organization_id"
+                referencedTableName="organizations"
+                referencedColumnNames="id"
+                constraintName="fk_projects_organization"
+                onDelete="RESTRICT"/>
+        <comment>Add foreign key constraint for projects.organization_id</comment>
+    </changeSet>
+
+    <changeSet id="002-18" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="project_members"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'project_members'
+                    AND constraint_name = 'fk_project_members_project'
+                    AND constraint_type = 'FOREIGN KEY'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="project_members"
+                baseColumnNames="project_id"
+                referencedTableName="projects"
+                referencedColumnNames="id"
+                constraintName="fk_project_members_project"
+                onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+                baseTableName="project_members"
+                baseColumnNames="user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                constraintName="fk_project_members_user"
+                onDelete="CASCADE"/>
+        <comment>Add foreign key constraints for project_members</comment>
+    </changeSet>
+
+    <changeSet id="002-19" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="project_sequences"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM information_schema.table_constraints
+                    WHERE table_name = 'project_sequences'
+                    AND constraint_name = 'fk_project_sequences_project'
+                    AND constraint_type = 'FOREIGN KEY'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="project_sequences"
+                baseColumnNames="project_id"
+                referencedTableName="projects"
+                referencedColumnNames="id"
+                constraintName="fk_project_sequences_project"
+                onDelete="CASCADE"/>
+        <comment>Add foreign key constraint for project_sequences</comment>
+    </changeSet>
+
+    <!-- ===== ADD PERFORMANCE INDEXES ===== -->
+    <changeSet id="002-20" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="organizations"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM pg_indexes
+                    WHERE tablename = 'organizations'
+                    AND indexname = 'idx_organizations_slug'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <createIndex tableName="organizations" indexName="idx_organizations_slug">
+            <column name="slug"/>
+        </createIndex>
+        <comment>Add index for organizations.slug</comment>
+    </changeSet>
+
+    <changeSet id="002-21" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="projects"/>
+                <columnExists tableName="projects" columnName="organization_id"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM pg_indexes
+                    WHERE tablename = 'projects'
+                    AND indexname = 'idx_projects_organization'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <createIndex tableName="projects" indexName="idx_projects_organization">
+            <column name="organization_id"/>
+        </createIndex>
+        <comment>Add index for projects.organization_id</comment>
+    </changeSet>
+
+    <changeSet id="002-22" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="project_members"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM pg_indexes
+                    WHERE tablename = 'project_members'
+                    AND indexname = 'idx_project_members_user'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <createIndex tableName="project_members" indexName="idx_project_members_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="project_members" indexName="idx_project_members_project">
+            <column name="project_id"/>
+        </createIndex>
+        <comment>Add indexes for project_members</comment>
+    </changeSet>
+
+    <changeSet id="002-23" author="dev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="issues"/>
+                <columnExists tableName="issues" columnName="issue_key"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM pg_indexes
+                    WHERE tablename = 'issues'
+                    AND indexname = 'idx_issues_project_status'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <createIndex tableName="issues" indexName="idx_issues_project_status">
+            <column name="project_id"/>
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex tableName="issues" indexName="idx_issues_key">
+            <column name="issue_key"/>
+        </createIndex>
+        <comment>Add indexes for issues</comment>
+    </changeSet>
+
+</databaseChangeLog>
