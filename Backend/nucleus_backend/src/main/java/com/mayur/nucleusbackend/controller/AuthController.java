@@ -1,14 +1,13 @@
 package com.mayur.nucleusbackend.controller;
 
 import com.mayur.nucleusbackend.dto.request.LoginRequest;
-import com.mayur.nucleusbackend.dto.request.UserCreateRequest;
-import com.mayur.nucleusbackend.dto.request.ForgotPasswordRequest;
 import com.mayur.nucleusbackend.dto.response.ApiResponse;
 import com.mayur.nucleusbackend.dto.response.AuthResponse;
 import com.mayur.nucleusbackend.dto.response.UserResponse;
 import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.service.UserService;
 import com.mayur.nucleusbackend.util.JwtTokenProvider;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -39,21 +39,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest loginRequest) {
         try {
             // Check if user exists and is active before authentication
-            User user = userService.findByUsername(loginRequest.getUsername())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-            if (!user.isActive()) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Your account has been deactivated. Please contact administrator."));
-            }
-
-            // Authenticate user
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
+            Authentication authentication =
+                    authenticationManager.authenticate(
+                            new UsernamePasswordAuthenticationToken(
+                                    loginRequest.getUsername(),
+                                    loginRequest.getPassword()
+                            )
+                    );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -89,65 +81,9 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody ForgotPasswordRequest forgotPasswordRequest) {
-        try {
-            // Validate passwords match
-            if (!forgotPasswordRequest.getNewPassword().equals(forgotPasswordRequest.getConfirmPassword())) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("New password and confirm password do not match"));
-            }
-
-            // Validate password length
-            if (forgotPasswordRequest.getNewPassword().length() < 6) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Password must be at least 6 characters long"));
-            }
-
-            // Update password
-            userService.updatePassword(
-                    forgotPasswordRequest.getUsername(),
-                    forgotPasswordRequest.getNewPassword()
-            );
-
-            return ResponseEntity.ok(ApiResponse.success("Password updated successfully", null));
-
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("User not found"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Password reset failed: " + e.getMessage()));
-        }
-    }
-
     private void updateLastLogin(User user) {
         user.setLastLoginAt(Instant.now());
         userService.partialUpdateUser(user.getId(), user);
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody UserCreateRequest userCreateRequest) {
-        try {
-            // Check if user already exists
-            if (userService.existsByUsername(userCreateRequest.getUsername())) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Username already exists"));
-            }
-
-            if (userService.existsByEmail(userCreateRequest.getEmail())) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Email already exists"));
-            }
-
-            // Create user using the service
-            UserResponse createdUser = userService.createUser(userCreateRequest);
-
-            return ResponseEntity.ok(ApiResponse.success("User registered successfully", createdUser));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Registration failed: " + e.getMessage()));
-        }
     }
 
     @PostMapping("/logout")
@@ -160,4 +96,8 @@ public class AuthController {
                     .body(ApiResponse.error("Logout failed: " + e.getMessage()));
         }
     }
+
+    @Autowired
+    private PasswordEncoder encoder;
+
 }

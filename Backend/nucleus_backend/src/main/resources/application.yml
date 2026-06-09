@@ -36,11 +36,14 @@ springdoc:
     tagsSorter: alpha
     display-request-duration: true
 
-jwt:
-  secret: ${JWT_SECRET:ChangeMeInProdChangeMeInProdChangeMeInProd}
-  expiration: 36000000
+
 
 app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: 36000000
+
+
   upload:
     dir: uploads
     max-file-size: 10485760

@@ -13,13 +13,14 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwt.secret:yourSuperSecretKeyThatIsAtLeast64CharactersLongForHS512Algorithm}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
 
-    @Value("${app.jwt.expiration:86400000}")
+    @Value("${app.jwt.expiration}")
     private long jwtExpirationInMs;
 
     private SecretKey getSigningKey() {
+        
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
@@ -33,7 +34,7 @@ public class JwtTokenProvider {
                 .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 

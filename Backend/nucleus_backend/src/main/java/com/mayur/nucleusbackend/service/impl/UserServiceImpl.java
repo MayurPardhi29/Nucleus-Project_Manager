@@ -1,6 +1,6 @@
 package com.mayur.nucleusbackend.service.impl;
 
-import com.mayur.nucleusbackend.dto.request.UserCreateRequest;
+import com.mayur.nucleusbackend.dto.request.CreateUserByAdminRequest;
 import com.mayur.nucleusbackend.dto.response.UserResponse;
 import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.enums.UserRole;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -26,54 +27,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
+
         return userRepository.findAll();
     }
 
     @Override
     public Optional<User> getUserById(Long id) {
+
         return userRepository.findById(id);
     }
 
     @Override
     public Optional<User> getUserByUsername(String username) {
+
         return userRepository.findByUsername(username);
     }
 
     @Override
     public Optional<User> getUserByEmail(String email) {
+
         return userRepository.findByEmail(email);
     }
 
-    // ADD THIS MISSING METHOD
     @Override
     public Optional<User> findByUsername(String username) {
+
         return userRepository.findByUsername(username);
-    }
-
-    @Override
-    public UserResponse createUser(UserCreateRequest userCreateRequest) {
-        // Check if user already exists
-        if (userRepository.existsByUsername(userCreateRequest.getUsername())) {
-            throw new RuntimeException("Username already exists");
-        }
-
-        if (userRepository.existsByEmail(userCreateRequest.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        // Create new user entity
-        User user = new User();
-        user.setUsername(userCreateRequest.getUsername());
-        user.setEmail(userCreateRequest.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(userCreateRequest.getPassword()));
-        user.setDisplayName(userCreateRequest.getDisplayName());
-        user.setRole(userCreateRequest.getRole() != null ? userCreateRequest.getRole() : UserRole.DEVELOPER);
-        user.setIsActive(true);
-
-        User savedUser = userRepository.save(user);
-
-        // Convert to UserResponse
-        return convertToUserResponse(savedUser);
     }
 
     @Override
@@ -107,6 +86,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
+
         userRepository.deleteById(id);
     }
 
@@ -126,7 +106,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getActiveUsers() {
-        return userRepository.findByIsActiveTrue();
+        return userRepository.findAllActiveUsers();
     }
 
     @Override
@@ -144,15 +124,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.countActiveUsers();
     }
 
-    @Override
-    public void updatePassword(String username, String newPassword) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-    }
-
     // Helper method to convert User entity to UserResponse DTO
     private UserResponse convertToUserResponse(User user) {
         return new UserResponse(
@@ -165,5 +136,56 @@ public class UserServiceImpl implements UserService {
                 user.getLastLoginAt(),
                 user.getCreatedAt()
         );
+    }
+
+    @Override
+    public UserResponse createUserByAdmin(
+            CreateUserByAdminRequest request) {
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        validatePassword(request.getPassword());
+
+        User user = new User();
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setDisplayName(request.getDisplayName());
+
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        user.setRole(request.getRole());
+
+        user.setIsActive(
+                request.getIsActive() != null
+                        ? request.getIsActive()
+                        : true
+        );
+
+        User savedUser = userRepository.save(user);
+
+        return convertToUserResponse(savedUser);
+    }
+
+    private static final Pattern PASSWORD_PATTERN =
+            Pattern.compile(
+                    "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$"
+            );
+
+    private void validatePassword(String password) {
+
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException(
+                    "Password must contain at least 8 characters, one uppercase letter, one lowercase letter and one number"
+            );
+        }
     }
 }

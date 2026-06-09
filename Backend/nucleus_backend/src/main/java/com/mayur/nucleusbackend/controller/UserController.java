@@ -1,6 +1,7 @@
 package com.mayur.nucleusbackend.controller;
 
-import com.mayur.nucleusbackend.dto.request.UserCreateRequest;
+//import com.mayur.nucleusbackend.dto.request.UserCreateRequest;
+import com.mayur.nucleusbackend.dto.request.CreateUserByAdminRequest;
 import com.mayur.nucleusbackend.dto.request.UserUpdateRequest;
 import com.mayur.nucleusbackend.dto.response.ApiResponse;
 import com.mayur.nucleusbackend.dto.response.UserResponse;
@@ -8,6 +9,7 @@ import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,9 +23,12 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
+    @PreAuthorize(
+            "hasAnyRole('SUPER_ADMIN','ORG_ADMIN')"
+    )
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         try {
-            List<User> users = userService.getAllUsers();
+            List<User> users = userService.getActiveUsers();
             List<UserResponse> userResponses = users.stream()
                     .map(this::convertToResponse)
                     .collect(Collectors.toList());
@@ -36,6 +41,9 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(
+            "hasAnyRole('SUPER_ADMIN','ORG_ADMIN')"
+    )
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {
         try {
             User user = userService.getUserById(id)
@@ -49,10 +57,13 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody UserCreateRequest request) {
+    @PreAuthorize(
+            "hasRole('SUPER_ADMIN')"
+    )
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody CreateUserByAdminRequest request) {
         try {
             // Let the service handle all the validation and creation logic
-            UserResponse savedUser = userService.createUser(request);
+            UserResponse savedUser = userService.createUserByAdmin(request);
 
             return ResponseEntity.ok(ApiResponse.success("User created successfully", savedUser));
         } catch (Exception e) {
@@ -62,6 +73,9 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(
+            "hasAnyRole('SUPER_ADMIN')"
+    )
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         try {
             // Convert UserUpdateRequest to User entity
@@ -82,6 +96,9 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize(
+            "hasAnyRole('SUPER_ADMIN')"
+    )
     public ResponseEntity<ApiResponse<UserResponse>> partialUpdateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         try {
             // Convert UserUpdateRequest to User entity
@@ -102,6 +119,9 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize(
+            "hasRole('SUPER_ADMIN')"
+    )
     public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Long id) {
         try {
             userService.softDeleteUser(id);

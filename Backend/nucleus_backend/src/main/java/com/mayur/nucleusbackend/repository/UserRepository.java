@@ -29,4 +29,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	@Query("SELECT COUNT(u) FROM User u WHERE u.isActive = true AND u.deletedAt IS NULL")
 	long countActiveUsers();
+
+	Optional<User> findByUsernameAndDeletedAtIsNull(String username);
 }

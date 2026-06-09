@@ -437,7 +437,7 @@
             VALUES (
             'admin',
             'admin@nucleus.com',
-            '$2a$10$8.UnVuG9HpHffZAuE0vWgO2gZ1xZumW0QjVlHdO3t9p5J5J5J5J5J5', -- password: admin123
+            '$2a$10$vYR.H2xncPzslg1IrhWNaOrpHN.i7lZi4Dwf7i00jh5850DlM2KkG',
             'System Administrator',
             'SUPER_ADMIN',
             true

@@ -8,6 +8,7 @@ import type { AuthResponseData, LoginRequest, RegisterRequest } from '../types/A
 import type { CommentCreateRequest } from '../types/Comment';
 
 const BASE_URL = 'http://localhost:8080';
+// const BASE_URL = window.location.origin; 
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,
