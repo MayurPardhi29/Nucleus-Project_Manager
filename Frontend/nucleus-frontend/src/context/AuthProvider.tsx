@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { authApi } from '../api/authApi';
-import { User, LoginRequest, RegisterRequest, AuthResponse } from '../types/Auth';
+import {
+  User,
+  AuthResponseData,
+} from '../types/Auth';
 
 interface AuthState {
   user: User | null;
@@ -12,7 +15,6 @@ interface AuthContextValue {
   auth: AuthState;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
-  register: (payload: RegisterRequest) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -51,65 +53,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAuth(prev => ({ ...prev, loading: false }));
     }
   }, []);
-
   const login = async (username: string, password: string) => {
     try {
       console.log('Attempting login...');
-      const response: AuthResponse = await authApi.login({ username, password });
+  
+      const response = await authApi.login({
+        username,
+        password
+      });
+  
       console.log('Login successful:', response);
-      
-      if (!response.token || !response.user) {
+  
+      const authData = response.data;
+  
+      if (!authData.token) {
         throw new Error('Invalid response from server');
       }
-
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
+  
+      const user: User = {
+        username: authData.username,
+        email: authData.email,
+        role: authData.role
+      };
+  
+      localStorage.setItem(
+        'token',
+        authData.token
+      );
+  
+      localStorage.setItem(
+        'user',
+        JSON.stringify(user)
+      );
+  
       setAuth({
-        user: response.user,
+        user,
         isAuthenticated: true,
         loading: false
       });
-    } catch (error: any) {
+  
+    } catch (error) {
       console.error('Login failed:', error);
+  
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+  
       setAuth({
         user: null,
         isAuthenticated: false,
         loading: false
       });
-      throw error;
-    }
-  };
-
-  const register = async (payload: RegisterRequest) => {
-    try {
-      console.log('Attempting registration...');
-      const response: AuthResponse = await authApi.register(payload);
-      console.log('Registration successful:', response);
-      
-      if (!response.token || !response.user) {
-        throw new Error('Invalid response from server');
-      }
-
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      setAuth({
-        user: response.user,
-        isAuthenticated: true,
-        loading: false
-      });
-    } catch (error: any) {
-      console.error('Registration failed:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setAuth({
-        user: null,
-        isAuthenticated: false,
-        loading: false
-      });
+  
       throw error;
     }
   };
@@ -126,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, register }}>
+    <AuthContext.Provider value={{ auth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

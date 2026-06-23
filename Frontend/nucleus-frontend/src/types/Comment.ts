@@ -13,10 +13,3 @@ export interface CommentCreateRequest {
   content: string;
   issueId: number;
 }
-
-export interface CommentApiResponse<T> {
-  status: 'success' | 'error';
-  message: string;
-  data: T | null;
-  timestamp: string;
-}

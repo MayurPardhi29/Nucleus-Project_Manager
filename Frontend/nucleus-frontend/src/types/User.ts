@@ -1,22 +1,22 @@
 // types/User.ts
+import type { UserRole } from './Auth';
+
 export interface User {
   id: number;
   username: string;
   email: string;
   displayName: string;
   role: UserRole;
-  isActive?: boolean;
+  isActive: boolean;
   lastLoginAt?: string;
-  createdAt?: string;
+  createdAt: string;
 }
-
-export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'PROJECT_ADMIN' | 'DEVELOPER' | 'VIEWER';
 
 export interface UserCreateRequest {
   username: string;
   email: string;
   password: string;
-  displayName?: string;
+  displayName: string;
   role: UserRole;
 }
 

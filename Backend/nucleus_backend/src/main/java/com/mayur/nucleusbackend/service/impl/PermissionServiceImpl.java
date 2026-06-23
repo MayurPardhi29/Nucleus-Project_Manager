@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -58,7 +59,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (isUserProjectOwner(userId, projectId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN || role == ProjectRole.MEMBER;
+        return role == ProjectRole.PROJECT_ADMIN;
     }
 
     @Override
@@ -67,7 +68,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (isUserProjectOwner(userId, projectId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN;
+        return role == ProjectRole.PROJECT_ADMIN;
     }
 
     @Override
@@ -83,7 +84,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (organizationId != null && isOrganizationAdmin(userId, organizationId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN || role == ProjectRole.MEMBER;
+        return role == ProjectRole.PROJECT_ADMIN || role == ProjectRole.DEVELOPER;
     }
 
     @Override
@@ -115,9 +116,9 @@ public class PermissionServiceImpl implements PermissionService {
 
         ProjectRole role = getUserProjectRole(userId, projectId);
 
-        if (role == ProjectRole.ADMIN) return true;
+        if (role == ProjectRole.PROJECT_ADMIN) return true;
 
-        if (role == ProjectRole.MEMBER) {
+        if (role == ProjectRole.DEVELOPER) {
             return isUserIssueReporter(userId, issueId) || isUserIssueAssignee(userId, issueId);
         }
 
@@ -137,7 +138,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (organizationId != null && isOrganizationAdmin(userId, organizationId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN;
+        return role == ProjectRole.PROJECT_ADMIN;
     }
 
     @Override
@@ -153,7 +154,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (organizationId != null && isOrganizationAdmin(userId, organizationId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN;
+        return role == ProjectRole.PROJECT_ADMIN;
     }
 
     @Override
@@ -195,7 +196,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (organizationId != null && isOrganizationAdmin(userId, organizationId)) return true;
 
         ProjectRole role = getUserProjectRole(userId, projectId);
-        return role == ProjectRole.ADMIN;
+        return role == ProjectRole.PROJECT_ADMIN;
     }
 
     @Override
@@ -236,7 +237,27 @@ public class PermissionServiceImpl implements PermissionService {
         return project.map(p -> p.getOwner().getId().equals(userId)).orElse(false);
     }
 
-    // HELPER METHODS WITH ACTUAL IMPLEMENTATIONS
+    @Override
+    public boolean canViewOrganization(Long userId, Long organizationId) {
+
+        if (isGlobalAdmin(userId)) {
+            return true;
+        }
+
+        if (isOrganizationAdmin(userId, organizationId)) {
+            return true;
+        }
+
+        List<Project> projects =
+                projectRepository.findByOrganizationId(organizationId);
+
+        return projects.stream()
+                .anyMatch(project ->
+                        projectMemberRepository.existsByProjectIdAndUserId(
+                                project.getId(),
+                                userId
+                        ));
+    }
 
     private boolean isOrganizationAdmin(Long userId, Long organizationId) {
         Optional<User> user = userRepository.findById(userId);
@@ -303,4 +324,5 @@ public class PermissionServiceImpl implements PermissionService {
         Optional<Comment> comment = commentRepository.findById(commentId);
         return comment.map(c -> c.getIssue().getProject().getId()).orElse(null);
     }
+
 }

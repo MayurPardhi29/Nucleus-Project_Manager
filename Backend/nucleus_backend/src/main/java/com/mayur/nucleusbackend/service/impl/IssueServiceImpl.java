@@ -6,8 +6,10 @@ import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.enums.IssuePriority;
 import com.mayur.nucleusbackend.enums.IssueStatus;
 import com.mayur.nucleusbackend.enums.IssueType;
+import com.mayur.nucleusbackend.enums.ProjectRole;
 import com.mayur.nucleusbackend.repository.IssueRepository;
 import com.mayur.nucleusbackend.service.IssueService;
+import com.mayur.nucleusbackend.service.PermissionService;
 import com.mayur.nucleusbackend.util.IssueKeyGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,9 @@ public class IssueServiceImpl implements IssueService {
 
     @Autowired
     private IssueKeyGenerator issueKeyGenerator;
+
+    @Autowired
+    private PermissionService permissionService;
 
     @Override
     public List<Issue> getAllIssues() {
@@ -42,30 +47,88 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public Issue createIssue(Issue issue, User reporter) {
-        // Generate issue key if not provided
+
+        if (issue.getAssignee() != null) {
+
+            ProjectRole role =
+                    permissionService.getUserProjectRole(
+                            issue.getAssignee().getId(),
+                            issue.getProject().getId()
+                    );
+
+            if (role == ProjectRole.VIEWER) {
+                throw new RuntimeException(
+                        "Viewer cannot be assigned issues"
+                );
+            }
+        }
+
         if (issue.getKey() == null) {
-            String issueKey = issueKeyGenerator.generateIssueKey(issue.getProject().getId());
+            String issueKey =
+                    issueKeyGenerator.generateIssueKey(
+                            issue.getProject().getId()
+                    );
             issue.setKey(issueKey);
         }
 
         issue.setReporter(reporter);
+
         return issueRepository.save(issue);
     }
 
     @Override
     public Issue updateIssue(Long id, Issue issue) {
-        Issue existingIssue = issueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Issue not found with id: " + id));
 
-        existingIssue.setTitle(issue.getTitle());
-        existingIssue.setDescription(issue.getDescription());
-        existingIssue.setType(issue.getType());
-        existingIssue.setStatus(issue.getStatus());
-        existingIssue.setPriority(issue.getPriority());
-        existingIssue.setAssignee(issue.getAssignee());
-        existingIssue.setStoryPoints(issue.getStoryPoints());
-        existingIssue.setTimeEstimate(issue.getTimeEstimate());
-        existingIssue.setTimeSpent(issue.getTimeSpent());
+        Issue existingIssue =
+                issueRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Issue not found with id: " + id
+                                ));
+
+        if(issue.getTitle() != null)
+            existingIssue.setTitle(issue.getTitle());
+
+        if(issue.getDescription() != null)
+            existingIssue.setDescription(issue.getDescription());
+
+        if(issue.getType() != null)
+            existingIssue.setType(issue.getType());
+
+        if(issue.getStatus() != null)
+            existingIssue.setStatus(issue.getStatus());
+
+        if(issue.getPriority() != null)
+            existingIssue.setPriority(issue.getPriority());
+
+        if (issue.getAssignee() != null) {
+
+            ProjectRole role =
+                    permissionService.getUserProjectRole(
+                            issue.getAssignee().getId(),
+                            existingIssue.getProject().getId()
+                    );
+
+            if (role == ProjectRole.VIEWER) {
+                throw new RuntimeException(
+                        "Viewer cannot be assigned issues"
+                );
+            }
+
+            existingIssue.setAssignee(issue.getAssignee());
+        }
+
+        if(issue.getAssignee() != null)
+            existingIssue.setAssignee(issue.getAssignee());
+
+        if(issue.getStoryPoints() != null)
+            existingIssue.setStoryPoints(issue.getStoryPoints());
+
+        if(issue.getTimeEstimate() != null)
+            existingIssue.setTimeEstimate(issue.getTimeEstimate());
+
+        if(issue.getTimeSpent() != null)
+            existingIssue.setTimeSpent(issue.getTimeSpent());
 
         return issueRepository.save(existingIssue);
     }
@@ -80,6 +143,22 @@ public class IssueServiceImpl implements IssueService {
         if (issue.getType() != null) existingIssue.setType(issue.getType());
         if (issue.getStatus() != null) existingIssue.setStatus(issue.getStatus());
         if (issue.getPriority() != null) existingIssue.setPriority(issue.getPriority());
+        if (issue.getAssignee() != null) {
+
+            ProjectRole role =
+                    permissionService.getUserProjectRole(
+                            issue.getAssignee().getId(),
+                            existingIssue.getProject().getId()
+                    );
+
+            if (role == ProjectRole.VIEWER) {
+                throw new RuntimeException(
+                        "Viewer cannot be assigned issues"
+                );
+            }
+
+            existingIssue.setAssignee(issue.getAssignee());
+        }
         if (issue.getAssignee() != null) existingIssue.setAssignee(issue.getAssignee());
         if (issue.getStoryPoints() != null) existingIssue.setStoryPoints(issue.getStoryPoints());
         if (issue.getTimeEstimate() != null) existingIssue.setTimeEstimate(issue.getTimeEstimate());
@@ -162,8 +241,30 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public Issue assignIssueToUser(Long issueId, User assignee, User assignedBy) {
+
+        if (!Boolean.TRUE.equals(assignee.getIsActive())
+                || assignee.getDeletedAt() != null) {
+
+            throw new RuntimeException(
+                    "Cannot assign issue to deleted or inactive user"
+            );
+        }
+
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new RuntimeException("Issue not found with id: " + issueId));
+
+
+        ProjectRole role =
+                permissionService.getUserProjectRole(
+                        assignee.getId(),
+                        issue.getProject().getId()
+                );
+
+        if (role == ProjectRole.VIEWER) {
+            throw new RuntimeException(
+                    "Viewer cannot be assigned issues"
+            );
+        }
 
         issue.setAssignee(assignee);
         return issueRepository.save(issue);

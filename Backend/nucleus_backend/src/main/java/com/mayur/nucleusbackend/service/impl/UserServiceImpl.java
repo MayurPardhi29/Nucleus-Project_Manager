@@ -5,6 +5,7 @@ import com.mayur.nucleusbackend.dto.response.UserResponse;
 import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.enums.UserRole;
 import com.mayur.nucleusbackend.repository.UserRepository;
+import com.mayur.nucleusbackend.service.AuditLogService;
 import com.mayur.nucleusbackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,6 +25,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public List<User> getAllUsers() {
@@ -97,6 +101,11 @@ public class UserServiceImpl implements UserService {
         user.setDeletedAt(Instant.now());
         user.setIsActive(false);
         userRepository.save(user);
+        auditLogService.logAction(
+                "USER_DELETED",
+                "Deleted user id: " + id,
+                user
+        );
     }
 
     @Override
@@ -172,6 +181,12 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
 
+        auditLogService.logAction(
+                "USER_CREATED",
+                "Created user: " + savedUser.getUsername(),
+                user
+        );
+
         return convertToUserResponse(savedUser);
     }
 
@@ -185,6 +200,18 @@ public class UserServiceImpl implements UserService {
         if (!PASSWORD_PATTERN.matcher(password).matches()) {
             throw new IllegalArgumentException(
                     "Password must contain at least 8 characters, one uppercase letter, one lowercase letter and one number"
+            );
+        }
+    }
+
+    @Override
+    public void validateActiveUser(User user) {
+
+        if (!Boolean.TRUE.equals(user.getIsActive())
+                || user.getDeletedAt() != null) {
+
+            throw new RuntimeException(
+                    "User is inactive or deleted"
             );
         }
     }

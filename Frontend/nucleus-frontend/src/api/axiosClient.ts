@@ -4,7 +4,7 @@ import type { ApiResponse, ListApiResponse } from '../types/Api';
 import type { Project, ProjectCreateRequest, ProjectUpdateRequest } from '../types/Project';
 import type { Issue, IssueCreateRequest, IssueUpdateRequest } from '../types/Issue';
 import type { User, UserCreateRequest, UserUpdateRequest } from '../types/User';
-import type { AuthResponseData, LoginRequest, RegisterRequest } from '../types/Auth';
+import type { AuthResponseData, LoginRequest } from '../types/Auth';
 import type { CommentCreateRequest } from '../types/Comment';
 
 const BASE_URL = 'http://localhost:8080';
@@ -49,13 +49,6 @@ export const api = {
   auth: {
     login: (credentials: LoginRequest) =>
       axiosClient.post<ApiResponse<AuthResponseData>>('/api/auth/login', credentials),
-    
-    register: (userData: RegisterRequest) =>
-      axiosClient.post<ApiResponse<AuthResponseData>>('/api/auth/register', userData),
-
-    // ADD THESE HERE (not in comments)
-    forgotPassword: (data: { username: string; newPassword: string; confirmPassword: string }) => 
-      axiosClient.post<ApiResponse<string>>('/api/auth/forgot-password', data),
 
     logout: () => 
       axiosClient.post<ApiResponse<string>>('/api/auth/logout'),

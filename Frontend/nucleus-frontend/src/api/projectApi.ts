@@ -5,25 +5,29 @@ import type {
   ProjectCreateRequest, 
   ProjectUpdateRequest,
   ProjectMember,
-  AddMemberRequest
+  AddMemberRequest,
+  ProjectRole
 } from '../types/Project';
+import type{
+  ApiResponse
+} from '../types/Api';
 
 export const projectApi = {
   // Project endpoints
   getAll: () => 
-    axiosClient.get<{ data: Project[] }>('/api/projects'),
+    axiosClient.get<ApiResponse<Project[]>>('/api/projects'),
   
   getById: (id: number) => 
-    axiosClient.get<{ data: Project }>(`/api/projects/${id}`),
+    axiosClient.get<ApiResponse<Project>>(`/api/projects/${id}`),
   
   getByKey: (key: string) => 
-    axiosClient.get<{ data: Project }>(`/api/projects/key/${key}`),
+    axiosClient.get<ApiResponse<Project>>(`/api/projects/key/${key}`),
   
   create: (projectData: ProjectCreateRequest) => 
-    axiosClient.post<{ data: Project }>('/api/projects', projectData),
+    axiosClient.post<ApiResponse<Project>>('/api/projects', projectData),
   
   update: (id: number, projectData: ProjectUpdateRequest) => 
-    axiosClient.put<{ data: Project }>(`/api/projects/${id}`, projectData),
+    axiosClient.put<ApiResponse<Project>>(`/api/projects/${id}`, projectData),
   
   delete: (id: number) => 
     axiosClient.delete(`/api/projects/${id}`),
@@ -35,9 +39,21 @@ export const projectApi = {
   addMember: (projectId: number, memberData: AddMemberRequest) => 
     axiosClient.post(`/api/projects/${projectId}/members`, memberData),
   
-  updateMemberRole: (projectId: number, userId: number, roleData: { role: string }) => 
-    axiosClient.put(`/api/projects/${projectId}/members/${userId}`, roleData),
+  updateMemberRole: (
+    projectId: number,
+    userId: number,
+    data: { role: ProjectRole }
+  ) =>
+    axiosClient.put(
+      `/api/projects/${projectId}/members/${userId}/role`,
+      data
+    ),
   
-  removeMember: (projectId: number, userId: number) => 
-    axiosClient.delete(`/api/projects/${projectId}/members/${userId}`)
+    removeMember: (
+      projectId: number,
+      userId: number
+    ) =>
+      axiosClient.delete(
+        `/api/projects/${projectId}/members/${userId}`
+      ),
 };

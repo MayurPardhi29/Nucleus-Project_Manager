@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { api } from '../api/axiosClient';
-import type { LoginRequest, LoginResponse } from '../types/Auth';
+import type { AuthResponseData, LoginRequest } from '../types/Auth';
 import type { ApiResponse } from '../types/Auth'
 
 const LoginPage: React.FC = () => {
@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
   
     try {
       const response = await api.auth.login(formData);
-      const apiResponse: ApiResponse<LoginResponse> = response.data;
+      const apiResponse: ApiResponse<AuthResponseData> = response.data;
       
       console.log('Login API Response:', apiResponse);
       
@@ -259,16 +259,7 @@ const LoginPage: React.FC = () => {
             <div style={styles.inputIcon}>🔒</div>
           </div>
         </div>
-
-        {/* Forgot Password Link */}
-        <div style={styles.forgotPasswordContainer}>
-          <Link 
-            to="/forgot-password" 
-            style={styles.forgotPasswordLink}
-          >
-            Forgot your password?
-          </Link>
-        </div>
+        
         {/* Submit Button */}
         <button
           type="submit"
@@ -303,19 +294,6 @@ const LoginPage: React.FC = () => {
         {/* Divider */}
         <div style={styles.divider}>
           <span style={styles.dividerText}>or</span>
-        </div>
-
-        {/* Register Link */}
-        <div style={styles.registerContainer}>
-          <p style={styles.registerText}>
-            New to Nucleus?{' '}
-            <Link 
-              to="/register" 
-              style={styles.registerLink}
-            >
-              Create an account
-            </Link>
-          </p>
         </div>
 
         {/* Features List */}
@@ -601,23 +579,6 @@ const styles = {
     backgroundColor: 'rgba(255, 255, 255, 0.95)'
   } as React.CSSProperties,
 
-  registerContainer: {
-    textAlign: 'center'
-  } as React.CSSProperties,
-
-  registerText: {
-    color: '#7f8c8d',
-    fontSize: '0.95rem',
-    margin: 0
-  } as React.CSSProperties,
-
-  registerLink: {
-    color: '#3498db',
-    textDecoration: 'none',
-    fontWeight: '600',
-    transition: 'all 0.3s ease'
-  } as React.CSSProperties,
-
   features: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -638,19 +599,6 @@ const styles = {
 
   featureIcon: {
     fontSize: '1.2rem'
-  } as React.CSSProperties,
-
-  forgotPasswordContainer: {
-    textAlign: 'center',
-    marginBottom: '1.5rem'
-  } as React.CSSProperties,
-  
-  forgotPasswordLink: {
-    color: '#3498db',
-    textDecoration: 'none',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    transition: 'all 0.3s ease'
   } as React.CSSProperties,
 };
 

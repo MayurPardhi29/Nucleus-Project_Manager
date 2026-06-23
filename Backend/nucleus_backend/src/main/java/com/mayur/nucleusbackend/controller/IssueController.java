@@ -4,6 +4,7 @@ import com.mayur.nucleusbackend.dto.request.IssueCreateRequest;
 import com.mayur.nucleusbackend.dto.request.IssueUpdateRequest;
 import com.mayur.nucleusbackend.dto.response.ApiResponse;
 import com.mayur.nucleusbackend.dto.response.IssueResponse;
+import com.mayur.nucleusbackend.dto.response.UserResponse;
 import com.mayur.nucleusbackend.entity.Issue;
 import com.mayur.nucleusbackend.entity.Project;
 import com.mayur.nucleusbackend.entity.User;
@@ -201,10 +202,16 @@ public class IssueController {
             issueUpdate.setTimeEstimate(request.getTimeEstimate());
             issueUpdate.setTimeSpent(request.getTimeSpent());
 
-            // Set assignee if provided
             if (request.getAssigneeId() != null) {
+
+                if (!permissionService.canAssignIssue(currentUser.getId(), id)) {
+                    return ResponseEntity.status(403)
+                            .body(ApiResponse.error("Access denied to assign issue"));
+                }
+
                 User assignee = userService.getUserById(request.getAssigneeId())
                         .orElseThrow(() -> new RuntimeException("Assignee not found"));
+
                 issueUpdate.setAssignee(assignee);
             }
 
@@ -243,10 +250,16 @@ public class IssueController {
             issueUpdate.setTimeEstimate(request.getTimeEstimate());
             issueUpdate.setTimeSpent(request.getTimeSpent());
 
-            // Set assignee if provided
             if (request.getAssigneeId() != null) {
+
+                if (!permissionService.canAssignIssue(currentUser.getId(), id)) {
+                    return ResponseEntity.status(403)
+                            .body(ApiResponse.error("Access denied to assign issue"));
+                }
+
                 User assignee = userService.getUserById(request.getAssigneeId())
                         .orElseThrow(() -> new RuntimeException("Assignee not found"));
+
                 issueUpdate.setAssignee(assignee);
             }
 
@@ -280,6 +293,23 @@ public class IssueController {
         }
     }
 
+    private UserResponse convertUser(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .displayName(user.getDisplayName())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .lastLoginAt(user.getLastLoginAt())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
     // Helper method to convert Issue entity to IssueResponse DTO
     private IssueResponse convertToResponse(Issue issue) {
         IssueResponse response = new IssueResponse();
@@ -296,17 +326,8 @@ public class IssueController {
         response.setCreatedAt(issue.getCreatedAt());
         response.setUpdatedAt(issue.getUpdatedAt());
 
-        // Convert reporter to UserResponse
-        if (issue.getReporter() != null) {
-            User reporter = issue.getReporter();
-            // You would need to create a UserResponse conversion here
-        }
-
-        // Convert assignee to UserResponse if exists
-        if (issue.getAssignee() != null) {
-            User assignee = issue.getAssignee();
-            // You would need to create a UserResponse conversion here
-        }
+        response.setReporter(convertUser(issue.getReporter()));
+        response.setAssignee(convertUser(issue.getAssignee()));
 
         return response;
     }

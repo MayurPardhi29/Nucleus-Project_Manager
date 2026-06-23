@@ -1,6 +1,7 @@
 // types/Issue.ts
-// import type { User } from './User';
-// import type { Project } from './Project';
+import type { User } from './User';
+import type { Project } from './Project';
+
 export interface Issue {
   id: number;
   key: string;
@@ -47,11 +48,4 @@ export interface IssueUpdateRequest {
   storyPoints?: number;
   timeEstimate?: number;
   timeSpent?: number;
-}
-
-export interface IssueApiResponse<T> {
-  status: 'success' | 'error';
-  message: string;
-  data: T | null;
-  timestamp: string;
 }

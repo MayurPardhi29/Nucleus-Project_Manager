@@ -26,6 +26,7 @@ public interface UserService {
     boolean existsByEmail(String email);
     long countActiveUsers();
 
+    void validateActiveUser(User user);
     // Add these missing methods
     Optional<User> findByUsername(String username);
 //    void updatePassword(String username, String newPassword);

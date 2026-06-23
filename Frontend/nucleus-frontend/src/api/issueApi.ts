@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import { Issue } from '../types/Auth';
+import type { Issue } from '../types/Issue';
 
 export const issueApi = {
   getAllIssues: (): Promise<Issue[]> => {

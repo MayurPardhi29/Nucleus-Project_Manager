@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="004-1" author="mayur">
+
+        <sql>
+            UPDATE project_members
+            SET role = 'PROJECT_ADMIN'
+            WHERE role = 'ADMIN';
+
+            UPDATE project_members
+            SET role = 'DEVELOPER'
+            WHERE role = 'MEMBER';
+        </sql>
+
+    </changeSet>
+
+</databaseChangeLog>

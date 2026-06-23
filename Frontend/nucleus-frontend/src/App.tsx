@@ -6,7 +6,6 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ProjectsPage from './pages/ProjectsPage';
 import IssuesPage from './pages/IssuesPage';
@@ -15,7 +14,6 @@ import RequireAuth from './components/RequireAuth';
 import SettingsPage from './pages/SettingsPage';
 import HelpSupportPage from './pages/HelpSupportPage';
 import CalendarPage from './pages/CalendarPage'; 
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 import './index.css';
 
@@ -62,18 +60,7 @@ const App: React.FC = () => {
               <LoginPage />
             </AuthRoute>
           } />
-          
-          <Route path="/register" element={
-            <AuthRoute>
-              <RegisterPage />
-            </AuthRoute>
-          } />
 
-      <Route path="/forgot-password" element={
-        <AuthRoute>
-          <ForgotPasswordPage />
-        </AuthRoute>
-      } />
           {/* Protected routes */}
           <Route path="/dashboard" element={
             <RequireAuth>

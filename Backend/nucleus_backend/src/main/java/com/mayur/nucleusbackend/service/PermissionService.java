@@ -36,4 +36,6 @@ public interface PermissionService {
     ProjectRole getUserProjectRole(Long userId, Long projectId);
     boolean isProjectPublic(Long projectId);
     boolean isUserProjectOwner(Long userId, Long projectId);
+
+    boolean canViewOrganization(Long userId, Long organizationId);
 }

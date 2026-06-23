@@ -133,7 +133,7 @@ public class ProjectController {
             Project savedProject = projectService.createProject(project, currentUser);
 
             // Auto-add owner as project admin
-            projectMemberService.addMemberToProject(savedProject, currentUser, ProjectRole.ADMIN);
+            projectMemberService.addMemberToProject(savedProject, currentUser, ProjectRole.PROJECT_ADMIN);
 
             ProjectResponse projectResponse = convertToResponse(savedProject);
             return ResponseEntity.ok(ApiResponse.success("Project created successfully", projectResponse));

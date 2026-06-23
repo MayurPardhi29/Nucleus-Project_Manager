@@ -5,6 +5,7 @@ import com.mayur.nucleusbackend.entity.User;
 import com.mayur.nucleusbackend.enums.ProjectRole;
 import com.mayur.nucleusbackend.repository.ProjectMemberRepository;
 import com.mayur.nucleusbackend.repository.ProjectRepository;
+import com.mayur.nucleusbackend.service.AuditLogService;
 import com.mayur.nucleusbackend.service.PermissionService;
 import com.mayur.nucleusbackend.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private PermissionService permissionService;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
@@ -45,8 +49,11 @@ public class ProjectServiceImpl implements ProjectService {
     public Project createProject(Project project, User owner) {
         Project savedProject = projectRepository.save(project);
 
-        // Auto-add owner as project admin
-        // This will be handled by ProjectMemberService later
+        auditLogService.logAction(
+                "PROJECT_CREATED",
+                "Created project: " + savedProject.getKey(),
+                owner
+        );
         return savedProject;
     }
 

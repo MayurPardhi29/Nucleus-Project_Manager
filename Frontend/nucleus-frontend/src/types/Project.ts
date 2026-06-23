@@ -1,5 +1,5 @@
 // types/Project.ts
-import type { Organization } from './Organization';
+// import type { Organization } from './Organization';
 import type { User } from './User';
 
 export interface Project {
@@ -7,7 +7,6 @@ export interface Project {
   name: string;
   description?: string;
   key: string;
-  organization: Organization;
   owner: User;
   isPrivate: boolean;
   createdAt: string;
@@ -20,7 +19,6 @@ export interface ProjectCreateRequest {
   name: string;
   description?: string;
   key: string;
-  organizationId: number;
   isPrivate?: boolean;
 }
 
@@ -43,4 +41,7 @@ export interface AddMemberRequest {
   role: ProjectRole;
 }
 
-export type ProjectRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
+export type ProjectRole =
+  | 'PROJECT_ADMIN'
+  | 'DEVELOPER'
+  | 'VIEWER';

@@ -21,6 +21,14 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     @Override
     public ProjectMember addMemberToProject(Project project, User user, ProjectRole role) {
+        if (!Boolean.TRUE.equals(user.getIsActive())
+                || user.getDeletedAt() != null) {
+
+            throw new RuntimeException(
+                    "Cannot add deleted or inactive user to project"
+            );
+        }
+
         // Check if user is already a member
         if (projectMemberRepository.existsByProjectIdAndUserId(project.getId(), user.getId())) {
             throw new RuntimeException("User is already a member of this project");
